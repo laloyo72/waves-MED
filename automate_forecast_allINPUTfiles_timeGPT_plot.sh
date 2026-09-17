@@ -11,7 +11,7 @@ set -e
 
 # Deactivate conda and Activate the Python virtual environment
 #conda deactivate
-source /home/laloyo/environments/utm_env/bin/activate #path to you venv
+source /home/laloyo/environments/waves-MED/bin/activate #path to you venv
 
 # DEFINE case and corresponding bc point coords
 # TODO: auto
