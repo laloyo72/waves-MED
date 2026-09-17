@@ -35,10 +35,6 @@ waves-MED
 │   └───palma
 │       │   README
 │       │   input_ca00.swn
-│       │   input_ca01.swn
-│       │   input_ca02.swn
-│       │   input_ca03.swn
-│       │   input_ca04.swn
 │       │   swan.exe
 │       │   swaninit
 │       │   swanrun
@@ -50,27 +46,40 @@ waves-MED
 └───DATA
 │   │
 │   └───bathy
-│       │   BatimetriaRegenerada_mallorca.dat
+│       │   bathy_iberian_LR.nc
 │   │
 │   └───coastline
-│       │   mallorca_coastline.dat
-│       │   mallorca_coastline_utm.dat
-│       │   ...
-│   │
-│   └───polygon
-│       │   mallorca_polygon.cpg
-│       │   ...
+|       │
+|       └───Europe_coastline_2020_OSM
+│           │   Europe_coastline_2020_OSM.shp
+│           │   ...
 │ 
 └───scripts
 │   │
 │   └───bathy
-│       │   interpolate2.py
+│       │   download_and_interp_EMODNET_withcoastline_angle.py
+│       │   download_bathy_gebco.py
+│       │   plot_bathy_matrix.py
 │   │
 │   └───opendap
 │       │   save_simar_point_to_TPAR.py
+│       │   save_simar_point_to_TPAR_year.py
+│   │
+│   └───output
+│       │   check_matlab.py
+│       |   ...
+│   │
+│   └───plots
+│       │   validate.py
+│
+└───start
+|   |   input_ca00.swn
+|   |   README
+|   |   swan.exe  
+|   |   swanrun
 │  
 └───timeGPT
-    │   timeGPT.py
+|   │   timeGPT.py
 │   .gitignore
 │   README.md
 │   requirements.txt  
