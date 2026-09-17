@@ -1,8 +1,7 @@
-# cambio pa molestar
 #!/bin/bash
 ####
 # steps to run swan forecast automatically everyday (for one domain)
-# Last modified: 07/04/2025 by @laloyo
+# Last modified: 17/09/2026 by @laloyo
 ####
 # STEPS
 # 0. choose domain and make input file (this and INPUT.swn file should be done)
@@ -33,6 +32,9 @@ CASES_LON["tarragona"]=1.24
 CASE="tarragona"  # Change this for other cases
 SWAN_CASE="ca00" # choose case
 
+# DEFINE BASE DIRECTORY!!!!!!!!
+BASE_DIR="/home/laloyo/waves-MED/"
+
 # if using timeGPT module, choose the variable you'd like to predict with timeGPT
 # options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual
 GPT_target_VAR="Hsig"
@@ -41,9 +43,8 @@ GPT_target_VAR="Hsig"
 LAT=${CASES_LAT[$CASE]}
 LON=${CASES_LON[$CASE]}
 
-# define directories
-CASE_DIR="/home/laloyo/waves-iber/cases/${CASE}"
-BASE_DIR="/home/laloyo/waves-iber/"
+# define directories !!!!!
+CASE_DIR="${BASE_DIR}/cases/${CASE}"
 TIMEGPT_DIR="${BASE_DIR}/timeGPT/"
 VAL_DIR="${BASE_DIR}/scripts/validation"
 INPUT_DIR="${CASE_DIR}/input"
