@@ -124,9 +124,9 @@ waves-MED
   - **`/combine/`**: Directory where combined SWAN ouput and tide gauge measurements DATA files are located
   - **`/DATA/`**: Directory where tide gauge downloaded and calculated DATA is stored
   - **`/pre/`**: Directory to pre-prepare timegpt DATA for forecast.
-        - `download_and_calculate_mareograf_long.py`: Downloads tide gauge DATA and calculates Hsig and Period
-        - `combine_datasets.py`: Combines SWAN output with calculated tide gauge DATA
-        - `check_time_complete.py`: Checks timeseries has no missing dates. otherwise timeGPt fails
+      - `download_and_calculate_mareograf_long.py`: Downloads tide gauge DATA and calculates Hsig and Period
+      - `combine_datasets.py`: Combines SWAN output with calculated tide gauge DATA
+      - `check_time_complete.py`: Checks timeseries has no missing dates. otherwise timeGPt fails
   - **`/prediction/`**: Directory where timeGPT prediction is stored
 - **`.env`**: I have not uploaded mine. You will need to create a nixtla account and save the nixtla key here.
 
@@ -135,7 +135,6 @@ waves-MED
 - **`requirements.txt`**: A list of all the Python dependencies needed to run the project. You can install the necessary packages using `pip install -r requirements.txt`.
 
 - **`README.md`**: This file explains the purpose and structure of the repository.
-- 
 ## How to use
 If the Requirements are satisfied you should be able to run the operational system like:
 ```bash
