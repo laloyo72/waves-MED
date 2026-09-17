@@ -1,0 +1,19 @@
+# gitignore
+# by @laloyo
+# last modified: 08/04/2025
+
+# ignore what we do not want to upload: figures, outputs, heavy data. the .dat are uploaded as there is the bathymetry, coastline etc
+**/*.h5
+**/*.csv
+**/*.log
+**/*.mat*
+**/*.o
+**/*.f
+**/*.ftn
+**/*.f90
+**/*.ftn90
+**/*.png
+**/*.jpg
+**/*.prt
+**/*.erf
+**/*.env
