@@ -13,7 +13,7 @@ This project requires the `utm` library to convert location coordinates, from la
 A Python virtual environment is recommended for managing dependencies. You can create one and install the necessary packages from the `requirements.txt` file:
 
 ```bash
-python3 -m venv waves-MED # you could call utm_env as you wanted and modify its source in the bash script
+python3 -m venv waves-MED # you could call waves-MED virtual environment as you wanted and modify its source in the  main bash script
 source waves-MED/bin/activate  # linux
 pip install -r requirements.txt
 ```
