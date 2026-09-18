@@ -177,27 +177,33 @@ Here are the steps:
    - **Line 41**: Adjust the location of the point you want to validate your simulation with (in UTM coords):
      ```
      POINTS 'POINT' [UTM easting] [UTM northing]
-     
+     ```
 4. **Modify the Bash script**:
 
-   - **Line 32**: Set your case name:
+   - **Line 13**: Set your case name:
      ```bash
      CASE="case_name"
      ```
 
-   - **Line 36**: Set your base directory PATH:
+   - **Line 17**: Set your base directory PATH:
      ```bash
      BASE_DIR="PATH"
      ```
      
-   - **Line 40**: Set the variable you want to predict with timegpt:
+   - **Line 21**: Set the variable you want to predict with timegpt:
      ```bash
      GPT_target_VAR="var"
      ```
-
-   - **Line 89**: Uncomment this line to generate the interpolated bathymetry for the new region.(remove the #)
+     
+   - **Line 25**: Set the PATH to activate your python environment :
      ```bash
-     python3 /home/laloyo/waves-MED/scripts/bathy/download_and_interp_EMODNET_withcoastline_angle.py "$CASE" "$SWAN_CASE" "$LAT" "$LON"
+     source PATH
+     ```
+     
+   - **Line 30 & on**: Set the coordinates of the boundary condition of your computational grid:
+     ```bash
+     CASES_LAT["case_name"]=lat
+     CASES_LON["case_name"]=lon
      ```
 
 5. **Enjoy your new case!**  
