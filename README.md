@@ -6,10 +6,7 @@ Before running the system, you need to set up a few things:
 ### 1. SWAN Model
 You need to have SWAN (Simulating Waves Nearshore) compiled with NetCDF support. You can follow the instructions in the [Implementation Manual](https://swanmodel.sourceforge.io/download/zip/swanimp.pdf) to download and compile SWAN.
 
-### 2. utm Python Library
-This project requires the `utm` library to convert location coordinates, from lat,lon to UTM. You can get the library from the [GitHub repository](https://github.com/Turbo87/utm).
-
-### 3. Python Virtual Environment
+### 2. Python Virtual Environment
 A Python virtual environment is recommended for managing dependencies. You can create one and install the necessary packages from the `requirements.txt` file:
 
 ```bash
