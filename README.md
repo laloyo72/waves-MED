@@ -163,9 +163,13 @@ Here are the steps:
      ```
      Change `'CASENAME'` to your desired case name.
 
-   - **Line 7**: Modify the grid coordinates to the study location:
+   - **Line 7**: Adjust the computational grid coordinates to the study location:
      ```
      CGRID   [xpc] [ypc] [alpc] [xlenc] [ylenc] [mxc] [myc] CIRCLE 72 0.0345 1.00  34
+     ```
+   - **Line 8**: Adjust the bathymetry file grid:
+     ```
+     INPGRID BOTTOM REGULAR [xpinp] [ypinp] [alpinp] [mxinp] [myinp] [dxinp] [dyinp] EXC -1.0
      ```
      Use UTM coordinates. See more details in the [SWAN User Manual](https://swanmodel.sourceforge.io/download/zip/swanuse.pdf).
 
