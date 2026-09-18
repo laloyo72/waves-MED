@@ -167,12 +167,17 @@ Here are the steps:
      ```
      CGRID   [xpc] [ypc] [alpc] [xlenc] [ylenc] [mxc] [myc] CIRCLE 72 0.0345 1.00  34
      ```
+     NOTE: There is an script (scripts/bathy/create_domain.py) to help you define your domain
    - **Line 8**: Adjust the bathymetry file grid:
      ```
      INPGRID BOTTOM REGULAR [xpinp] [ypinp] [alpinp] [mxinp] [myinp] [dxinp] [dyinp] EXC -1.0
      ```
      Use UTM coordinates. See more details in the [SWAN User Manual](https://swanmodel.sourceforge.io/download/zip/swanuse.pdf).
-
+     
+   - **Line 41**: Adjust the location of the point you want to validate your simulation with (in UTM coords):
+     ```
+     POINTS 'POINT' [UTM easting] [UTM northing]
+     
 4. **Modify the Bash script**:
 
    - **Line 32**: Set your case name:
