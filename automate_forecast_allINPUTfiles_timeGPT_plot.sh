@@ -208,4 +208,4 @@ cd $TIMEGPT_DIR
 echo "remember to add you nixtla key in .env file"
 echo "you have to define the variable you want to predict with timeGPT at the start of the file"
 echo "options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual"
-#python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE"
+python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE"
