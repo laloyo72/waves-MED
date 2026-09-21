@@ -9,27 +9,8 @@ echo "choose the domain and make input file (this and INPUT.swn file should be d
 # Exit on error
 set -e
 
-# Deactivate conda and Activate the Python virtual environment
-#conda deactivate
-source /home/laloyo/environments/waves-MED/bin/activate #path to you venv
-
-# DEFINE case and corresponding bc point coords
-# TODO: auto
-declare -A CASES_LAT CASES_LON
-CASES_LAT["alcudia"]=39.82
-CASES_LON["alcudia"]=3.204
-
-CASES_LAT["cala_millor"]=39.67
-CASES_LON["cala_millor"]=3.5
-
-CASES_LAT["palma"]=39.5
-CASES_LON["palma"]=2.65
-
-CASES_LAT["tarragona"]=41.06
-CASES_LON["tarragona"]=1.24
-
 # DEFINEE!!!! choose case and utm conversion location
-CASE="tarragona"  # Change this for other cases
+CASE="bilbo"  # Change this for other cases
 SWAN_CASE="ca00" # choose case
 
 # DEFINE BASE DIRECTORY!!!!!!!!
@@ -39,9 +20,15 @@ BASE_DIR="/home/laloyo/waves-MED/"
 # options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual
 GPT_target_VAR="Hsig"
 
-# corresponding lot lan for bc point
-LAT=${CASES_LAT[$CASE]}
-LON=${CASES_LON[$CASE]}
+# Deactivate conda and Activate the Python virtual environment
+#conda deactivate
+source /home/laloyo/environments/waves-MED/bin/activate #path to you venv
+
+# get corresponding bc point coords from cases.yaml
+LAT=$(python scripts/utils/get_case.py "$CASE" boundary_point.lat)
+LON=$(python scripts/utils/get_case.py "$CASE" boundary_point.lon)
+
+echo "BC coords for $CASE : $LAT , $LON"
 
 # define directories !!!!!
 CASE_DIR="${BASE_DIR}/cases/${CASE}"
@@ -86,7 +73,7 @@ cd $BASE_DIR
 echo "1. intertpolatinnnnn EMODNET bathymetry to domain"
 # we move to the corresponding path
 cd ./scripts/bathy/
-#python3 download_and_interp_EMODNET_withcoastline_angle.py "$CASE" "$SWAN_CASE" "$LAT" "$LON"
+python3 download_and_interp_EMODNET_withcoastline_angle.py "$CASE" "$SWAN_CASE" "$LAT" "$LON"
 echo "coastline must be downloaded from EMODNET before hand, bathymetry is automatically downloaded"
 echo "interpolation must be done just once, if you already created bathy_matrix just comment the interpolation part on the script"
 
@@ -208,18 +195,17 @@ echo "before running you must have swanrun and swan.exe correctly compiled in th
 ./swanrun
 echo "standard forecast finishedd!!"
 
-# TODO add more comments when finishing like case, FILe etc
-
-#echo "The main output then used for timeGPT is in ${SWAN_OUTPUT_FILE}"
 # 5. automatize some output plots 
 #calculate mareograf wave parameters from series
-#cd $VAL_DIR
-#python3 download_and_calculate_mareograf_op.py
+cd $VAL_DIR
+python3 download_and_calculate_mareograf_op.py "$CASE"
 #plot
-#python3 compare_palma_times_automate.py
-# we add timeGPT
+python3 validate_op.py "$CASE"
+
+# 6. we add timeGPT
+echo "If you want to use the timeGPT module follow the steps explained in ./timeGPT/README.txt"
 cd $TIMEGPT_DIR 
-echo "remember to add you nixtla key in the TIMEGPT_DIR"
+echo "remember to add you nixtla key in .env file"
 echo "you have to define the variable you want to predict with timeGPT at the start of the file"
 echo "options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual"
-python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE"
+#python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE"
