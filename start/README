@@ -1,0 +1,4 @@
+# here you have the files you need to copy to your case directory.
+1. swan.exe # remember you have to compile SWAN yourself. This executable was ready for an Ubuntu 20.04 arch x86_64 Work Station
+2. swanrun
+3. input_caxx.swn

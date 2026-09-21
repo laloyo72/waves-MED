@@ -1,0 +1,45 @@
+PROJ 'xxxxx' 'caxx' 
+$ NONSTATIONARY 
+SET level=0 NAUTICAL
+MODE NONSTationary TWODimensional 
+COORDINATES CARTESIAN  
+$ 
+CGRID   463400 4376500 0 12600 4000 63 20 CIRCLE 72 0.0345 1.00  34 
+$ 
+INPGRID   BOTTOM  REGULAR 463400 4376500 0 63 20 200 200 EXC -1.0 
+READINP   BOTTOM 1 'bathy/bottom_ca00_matrix.dat' 1 0 FREE
+$ 
+$ NO WIND, you can activate it 
+$ Input Boundary Conditions: one point
+BOUN SHAPE JONSWAP 3.3 PEAK  DSPR  DEGREES 
+BOUN  SIDE N CON FILE 'pathN.txt'
+BOUN  SIDE W CON FILE 'pathW.txt'
+BOUN  SIDE E CON FILE 'pathE.txt'
+BOUN  SIDE S CON FILE 'pathS.txt'
+$
+INITIAL
+$
+$ here a simple configuration.
+OFF QUAD 
+OFF WCAP 
+GEN1 
+BREA 
+FRICTION JONSWAP 
+$
+PROP BSBT
+
+$$$$$OUTPUT2$$$$$
+$ output timestamp requested every 1h 
+BLOCK 'COMPGRID' NOHEAD 'path.mat' LAY 3 XP YP DEP HSIGN TM02 RTP DIR OUTPUT 20260907.000000 1 HR
+
+$$$$$OUTPUT3$$$$$
+$ variables evolution in time for a point:
+POINTS 'POINT' 469331 4378762
+TABle 'POINT' HEADER 'path.txt' TIME XP YP DEP HSIGN TM02 RTP DIR OUTPUT 20260907.000000 1 HR
+$
+$
+$ 
+TEST  1,0 
+COMPUTE NONSTat 20260907.000000 1 HR 20260909.120000
+STOP
+$ 
