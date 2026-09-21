@@ -40,6 +40,9 @@ waves-MED
 │       │       │    bottom_ca00_HRES_matrix.dat 
 │       │       │    ...
 │
+└───config
+│   │   cases.yml
+│
 └───DATA
 │   │
 │   └───bathy
@@ -66,7 +69,12 @@ waves-MED
 │       │   check_matlab.py
 │       |   ...
 │   │
-│   └───plots
+│   └───utils
+│       │   get_case.py
+│   │
+│   └───validation
+│       │   download_and_calculate_mareograf_op.py
+│       │   validate_op.py
 │       │   validate.py
 │
 └───start
@@ -76,6 +84,7 @@ waves-MED
 │   │   swanrun
 │  
 └───timeGPT
+│   │   README.txt
 │   │   timeGPT.py
 │   │
 │   └───combine
@@ -103,9 +112,9 @@ waves-MED
             - Bathymetry data (`bottom_ca00_HRES.dat`, etc.)
         - Input configuration files for SWAN (`input_caxx.swn`, etc.). The input_ca00.swn is the one configured to work operationally. Read the README to see the differences between input_caxx.swn.
         - Scripts to run SWAN (`swanrun`, etc.). When compiling swan in your computer you will need to cp the swanrun and swan.exe to each case you want to run. In this case I modified swanrun so that it uses 28cores. You will need to get them by compiling SWAN in your computer.
-
+- **`/config/`**:
+  - `cases.yml`: File where each cases BC coordinates and tide_gauge url PATh must be defined
 - **`/DATA/`**: Stores all data related to the simulations, including coastline data and bathymetry data.
-
 - **`/scripts/`**: Contains Python scripts used for different tasks within the project. For example:
     - **`/bathy/`**:
         -  `download_and_interp_EMODNET_withcoastline_angle.py`:  Interpolates general bathymetry of Iberian Peninsula to local domain and creates the file needed to run SWAN in the region of interest, specified by input_caxx.swn
@@ -113,10 +122,15 @@ waves-MED
         - `save_simar_point_to_TPAR.py`: Downloads simar data that will be used as BC. Taking into account what's specified in input_caxx.swn
     - **`/output/`**:
         - `check_matlab.py`: Reads the variables in .mat file created by SWAN
-    - **`/plots/`**:
+    - **`/utils/`**:
+        - `get_case.py`: Reads cases.yml
+    - **`/validation/`**: scripts to validate operational and historical wave forecast
+        - `download_and_calculate_mareograf_op.py`: downloads and calculates yesterday's tide gauge measurements' wave height and period
+        - `validate_op.py`: Plots yesterday's SWAN output against tide gauge measurements
         - `validate.py`: Plots SWAN output against any validation file downloaded
 
-- **`/timeGPT/`**: 
+- **`/timeGPT/`**:
+  - `README.txt`: Explains how to add timeGPt module
   - `timeGPT.py`: Runs timeGPT using each day swan fcst. It adjusts the model's result to what the tyde gauge located in the port could measure.
   - **`/combine/`**: Directory where combined SWAN ouput and tide gauge measurements DATA files are located
   - **`/DATA/`**: Directory where tide gauge downloaded and calculated DATA is stored
@@ -178,7 +192,7 @@ Here are the steps:
      ```
      POINTS 'POINT' [UTM easting] [UTM northing]
      ```
-4. **Modify the Bash script**:
+4. **Modify the Bash script automate_forecast_allINPUTfiles_timeGPT_plot.sh**:
 
    - **Line 13**: Set your case name:
      ```bash
@@ -199,14 +213,43 @@ Here are the steps:
      ```bash
      source PATH
      ```
-     
-   - **Line 30 & on**: Set the coordinates of the boundary condition of your computational grid:
-     ```bash
-     CASES_LAT["case_name"]=lat
-     CASES_LON["case_name"]=lon
-     ```
+5. **Add your new case to `config/cases.yaml`**
 
-5. **Enjoy your new case!**  
+   For example:
+
+   ```yaml
+   palma:
+     boundary_point:
+       lat: 39.50
+       lon: 2.65
+
+     tide_gauge:
+       code: MIR2Z_Mallorca_Mall_3851
+       subdir: tidegauge_mall
+   ```
+
+   The following information needs to be defined:
+
+   1. **`boundary_point`**: geographical coordinates of the point where the boundary conditions used by SWAN will be obtained. These data come from the SIMAR LowRes regional wave simulations:
+
+      [Puertos de Estado – SIMAR LowRes](http://opendap.puertos.es/thredds/catalog/wave_regional_aib/catalog.html)
+
+   2. **`tide_gauge`**: information about the Puertos de Estado tide gauge used to validate the simulation:
+      - `code`: identifier of the tide gauge station.
+      - `subdir`: directory containing the station data.
+
+      Tide gauge stations can be found in the Puertos de Estado THREDDS catalog:
+
+      [Puertos de Estado – THREDDS catalog](http://opendap.puertos.es/thredds/catalog/catalog.html)
+
+      Select **Nivel del Mar** and identify the station corresponding to your study area.
+
+      If no tide gauge is available for your case, use:
+
+      ```yaml
+      tide_gauge: null
+      ```
+6. **Enjoy your new case!**  
    Adapt the physics as wanted or needed :3
 
 
