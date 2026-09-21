@@ -1,0 +1,61 @@
+# config/cases.yml
+# in this script we must define: 
+#   1. coordinates of the BC we will download and use in SWAN (from SIMAR LowRes simulation: http://opendap.puertos.es/thredds/catalog/wave_regional_aib/catalog.html )
+#   2. url PATH top download Puertos tide_gauge measurements (http://opendap.puertos.es/thredds/catalog/catalog.html - Nivel del Mar (choose yours))
+
+palma:
+  boundary_point:
+    lat: 39.50
+    lon: 2.65
+
+  tide_gauge:
+    code: MIR2Z_Mallorca_Mall_3851
+    subdir: tidegauge_mall
+
+
+alcudia:
+  boundary_point:
+    lat: 39.82
+    lon: 3.204
+
+  tide_gauge:
+    code: MIR2Z_Alcudia_Alcu_3853
+    subdir: tidegauge_alcu
+
+
+tarragona:
+  boundary_point:
+    lat: 41.06
+    lon: 1.24
+
+  tide_gauge:
+    code: MIR2Z_Tarragona_Tarr_3756
+    subdir: tidegauge_tarr
+
+
+cala_millor:
+  boundary_point:
+    lat: 39.67
+    lon: 3.50
+
+  tide_gauge: null
+
+
+bilbo:
+  boundary_point:
+    lat: 43.41
+    lon: -3.09
+
+  tide_gauge:
+    code: MIR2Z_Bilbao_Bil3_3114
+    subdir: tidegauge_bil3
+
+
+tarifa:
+  boundary_point:
+    lat: null
+    lon: null
+
+  tide_gauge:
+    code: MIR2Z_Tarifa_Tari_3540
+    subdir: tidegauge_tari
