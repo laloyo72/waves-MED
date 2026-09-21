@@ -30,6 +30,7 @@ your_case_name/
 ├── output/
 │   └── ...
 ├── input_ca00.swn
+├── swan.exe
 └── swanrun
 ```
 
