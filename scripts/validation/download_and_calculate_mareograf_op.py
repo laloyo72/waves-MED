@@ -1,20 +1,44 @@
 # we are trying to imitate joan's matlab code to calculate Hsig and Tp 
 # from mareograf series
 # i want to make it operational for each day
-# last modifies 21/09/26
+# last modifies 23/09/26
 ###################^w^####################
 # Triam els paràmetres
 
 import sys
 from pathlib import Path
 from datetime import date, datetime, timedelta
+import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
 import scipy.fftpack as fft
 import xarray as xr
 import yaml
+from wave_functions import welch_periodogram
 
+# ============================================================
+# IMPORTANT PARAMETERS
+# ============================================================
+
+# sampling period of the sea level data
+dt = 0.5
+
+# Maximum fraction of NaNs allowed in each block
+umbral_nan = 0.2  # 20%
+
+# Sample lenght used for each wave parameters estimate
+intervalo_muestras = 1024*4
+
+# Time interval between wave parameters estimation
+wave_dt='0.5h'
+
+# number of sample per each window in the welch periodogram
+n_fft_welch=256
+
+# Valid limits of teh spectrum in period [s]
+Tmin = 1
+Tmax = 20
 
 # ============================================================
 # CASE CONFIGURATION
@@ -63,6 +87,7 @@ if len(sys.argv) != 2:
     sys.exit(1)
 
 CASE = sys.argv[1].lower()
+CASE = "tarragona"
 
 case_config = load_case(CASE)
 
@@ -133,6 +158,17 @@ output_file = (
     / f"wave_parameters{yesterday_str}.txt"
 )
 
+output_file_w = (
+    output_dir
+    / f"wave_parameters{yesterday_str}_welch.txt"
+)
+
+# Overwrite outputs on every run.
+output_file.unlink(missing_ok=True)
+output_file_w.unlink(missing_ok=True)
+
+
+
 print(f"Output file:")
 print(output_file)
 
@@ -185,75 +221,12 @@ df["TIME"] = pd.to_datetime(
 )
 
 
-# ============================================================
-# INTERPOLATION
-# ============================================================
-
-nan_indices = df["SLEV"].isna()
-
-# Maximum fraction of NaNs allowed in each block
-umbral_nan = 0.1  # 10%
-
-# 8 minutes at 2 Hz = 960 samples
-intervalo_muestras = 960
-
-# Copy SLEV column
-df["SLEV_interp"] = df["SLEV"].copy()
-
-
-# Process in 8-minute blocks
-for i in range(
-    0,
-    len(df) - intervalo_muestras,
-    intervalo_muestras
-):
-
-    indices_intervalo = np.arange(
-        i,
-        i + intervalo_muestras
-    )
-
-    num_nans_intervalo = (
-        nan_indices.iloc[indices_intervalo].sum()
-    )
-
-    num_datos_intervalo = len(indices_intervalo)
-
-    # Interpolate if NaNs are below threshold
-    if (
-        num_nans_intervalo / num_datos_intervalo
-        <= umbral_nan
-    ):
-
-        valid_data = (
-            df.loc[
-                indices_intervalo,
-                "SLEV"
-            ].dropna()
-        )
-
-        if len(valid_data) > 1:
-
-            df.loc[
-                indices_intervalo,
-                "SLEV_interp"
-            ] = (
-                df.loc[
-                    indices_intervalo,
-                    "SLEV"
-                ]
-                .interpolate(
-                    method="linear",
-                    limit_direction="both"
-                )
-            )
-
 
 # ============================================================
 # EXTRACT SEA LEVEL DATA
 # ============================================================
 
-SL_interpolado = df["SLEV_interp"].values
+SL = df["SLEV"].values
 time = df["TIME"].values
 
 
@@ -271,7 +244,7 @@ timeVec = pd.date_range(
         yesterday,
         datetime.max.time()
     ),
-    freq="1h"
+    freq=wave_dt
 )
 
 
@@ -281,10 +254,6 @@ timeVec = pd.date_range(
 
 n_fft = 1024 // 2
 
-Tmin = 1
-Tmax = 20
-
-dt = 0.5
 
 n_fmax = int(
     n_fft * dt / Tmin
@@ -301,10 +270,10 @@ n_fmin = int(
 # INITIALIZE RESULTS
 # ============================================================
 
-Hm = np.zeros(len(timeVec))
-Tm1 = np.zeros(len(timeVec))
-Tm2 = np.zeros(len(timeVec))
-tp = np.zeros(len(timeVec))
+Hm_w = np.zeros(len(timeVec))*np.nan
+Tm1_w = np.zeros(len(timeVec))*np.nan
+Tm2_w = np.zeros(len(timeVec))*np.nan
+tp_w = np.zeros(len(timeVec))*np.nan
 
 spt_news = [None] * len(timeVec)
 spt_filt = [None] * len(timeVec)
@@ -326,133 +295,138 @@ for n, t_ref in enumerate(timeVec):
     )
 
     # Make sure enough data exists
-    if ind < len(time) - n_fft + 1:
+    if ind < len(time) - intervalo_muestras + 1:
 
-        aux = SL_interpolado[
-            ind:ind + n_fft
+        aux_raw = SL[
+            ind:ind + intervalo_muestras
         ]
 
+        nan_indices=np.where(~np.isnan(aux_raw))[0]
+        if nan_indices.size == 0:
+            aux_cut=aux_raw.copy()
+        else:
+            first_valid=nan_indices[0]
+            last_valid=nan_indices[-1]
+
+            aux_cut=aux_raw[first_valid:last_valid]
+    
+        nan_frac=np.isnan(aux_cut).sum()/len(aux_cut)
         # ----------------------------------------------------
         # FFT
         # ----------------------------------------------------
+        if (nan_frac<=umbral_nan) & (len(aux_cut)>=n_fft):
+            aux = (pd.Series(aux_cut)
+                .interpolate(method="linear", limit_direction="both")
+                .to_numpy())
+            frequency,pwel=welch_periodogram(aux - np.mean(aux), dt, n_fft_welch, segment_length=n_fft_welch, overlap=0.5)
 
-        new_fft = fft.fft(
-            aux - np.mean(aux),
-            n_fft
-        )
+            m0_w = np.sum(
+                        pwel
+                    )
+            
+            m1_w = np.sum(
+                pwel
+                * frequency
+            )
 
-        new_spt = np.abs(
-            new_fft
-        ) ** 2
+            m2_w = np.sum(
+                pwel
+                * (frequency ** 2)
+            )
 
-        new_spt = (
-            2
-            * new_spt
-            / (n_fft ** 2)
-        )
+            # ----------------------------------------------------
+            # Peak period
+            # ----------------------------------------------------
 
-        # ----------------------------------------------------
-        # Frequency filtering
-        # ----------------------------------------------------
+            ind2 = np.argmax(
+                spt_filt[n]
+            )
 
-        new_spt[:n_fmin] = 0
-        new_spt[n_fmax:] = 0
+            ind2_w = np.argmax(
+                        pwel
+                    )
 
-        new_freq = (
-            np.arange(len(new_spt))
-            / (n_fft * dt)
-        )
+            # ----------------------------------------------------
+            # Wave parameters
+            # ----------------------------------------------------
 
-        new_freq = new_freq[
-            :n_fmax
-        ]
+            Hm_w[n] = np.sqrt(m0_w) * 4
 
-        new_spt = new_spt[
-            :n_fmax
-        ]
+            Tm1_w[n] = (
+                m0_w / m1_w
+                if m1_w != 0
+                else np.nan
+            )
 
-        spt_news[n] = new_spt
+            Tm2_w[n] = (
+                np.sqrt(m0_w / m2_w)
+                if m2_w != 0
+                else np.nan
+            )
 
-        # ----------------------------------------------------
-        # Spectral filtering
-        # ----------------------------------------------------
+            tp_w[n] = 1/frequency[ind2_w]
 
-        spt_filt[n] = new_spt * (1 - (1 / (1 + ((new_freq / (2 / Tmax)) ** 2) ** 2)))
-        new_period = 1 / new_freq
-
-        # ----------------------------------------------------
-        # Spectral moments
-        # ----------------------------------------------------
-
-        m0 = np.sum(
-            spt_filt[n]
-        )
-
-        m1 = np.sum(
-            spt_filt[n]
-            * new_freq
-        )
-
-        m2 = np.sum(
-            spt_filt[n]
-            * (new_freq ** 2)
-        )
-
-        # ----------------------------------------------------
-        # Peak period
-        # ----------------------------------------------------
-
-        ind2 = np.argmax(
-            spt_filt[n]
-        )
-
-        # ----------------------------------------------------
-        # Wave parameters
-        # ----------------------------------------------------
-
-        Hm[n] = np.sqrt(m0) * 4
-
-        Tm1[n] = (
-            m0 / m1
-            if m1 != 0
-            else np.nan
-        )
-
-        Tm2[n] = (
-            np.sqrt(m0 / m2)
-            if m2 != 0
-            else np.nan
-        )
-
-        tp[n] = new_period[ind2]
-
+        else:
+            print(t_ref)
         # ----------------------------------------------------
         # Save result
         # ----------------------------------------------------
 
-        result_df = pd.DataFrame({
+        result_df_w = pd.DataFrame({
             "TIME": [t_ref],
-            "Hsig": [round(Hm[n], 8)],
-            "Tp": [round(tp[n], 8)],
-            "Tm1": [round(Tm1[n], 8)],
-            "Tm2": [round(Tm2[n], 8)]
+            "Hsig": [round(Hm_w[n], 8)],
+            "Tp": [round(tp_w[n], 8)],
+            "Tm1": [round(Tm1_w[n], 8)],
+            "Tm2": [round(Tm2_w[n], 8)]
         })
 
-        result_df["TIME"] = (
-            result_df["TIME"]
+        result_df_w["TIME"] = (
+            result_df_w["TIME"]
             .dt.strftime("%Y-%m-%d %H:%M:%S")
         )
 
         # Append to output file
-        result_df.to_csv(
-            output_file,
+        result_df_w.to_csv(
+            output_file_w,
             sep="\t",
             index=False,
             mode="a",
-            header=not output_file.exists()
+            header=not output_file_w.exists()
         )
 
         print(
             f"Results saved for {t_ref} "
-            f"in {output_file}"
+            f"in {output_file_w}"
         )
+    else:
+        print(t_ref)
+
+#%%
+plt.figure(figsize=(15,15))
+plt.subplot(411)
+plt.plot(df.TIME,df.SLEV-3.1,color="grey",label="Origunal SL data")
+plt.plot(timeVec,Hm_w,'.',label="Welch periodorgam")
+plt.ylabel("Hm [m]")
+plt.grid()
+plt.legend()
+
+plt.subplot(412)
+plt.plot(timeVec,tp_w,'.',label="Welch periodorgam")
+plt.ylabel("Peak Period [s]")
+plt.grid()
+plt.legend()
+
+plt.subplot(413)
+plt.plot(timeVec,Tm1_w,'.',label="Welch periodorgam")
+plt.ylabel("Tm1 [s]")
+plt.grid()
+plt.legend()
+
+
+plt.subplot(414)
+plt.plot(timeVec,Tm2_w,'.',label="Welch periodorgam")
+plt.ylabel("Tm2 [s]")
+plt.grid()
+plt.legend()
+
+plt.show()
