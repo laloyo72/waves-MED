@@ -42,7 +42,7 @@ print(year, month, day)
 # ============================================================
 
 case_path = f"../../cases/{case_name}"
-mareograf_calc = f"{case_path}/validation/mareograf/wave_parameters{yesterday_str}.txt"
+mareograf_calc = f"{case_path}/validation/mareograf/wave_parameters{yesterday_str}_welch.txt"
 base_path = f"{case_path}/output/{year}{month:02d}/"
 file_suffix = f"{yesterday_str}_{today_str}.txt"
 
@@ -173,7 +173,32 @@ plt.xticks(rotation=20, fontsize=16)
 plt.yticks(fontsize=16)
 plt.grid()
 
-fig_path = os.path.join(fig_dir, f"RTpeak_mareograf_calCvsSWAN_{yesterday_str}.png")
+fig_path = os.path.join(fig_dir, f"Tp_mareograf_calCvsSWAN_{yesterday_str}.png")
+plt.savefig(fig_path)
+print(f"Saved: {fig_path}")
+
+plt.show()
+
+# ============================================================
+# PLOT MEan Period
+# ============================================================
+
+plt.figure(figsize=(12, 6))
+
+plt.plot(df_mareograf_day['Time'], df_mareograf_day['Tm2'], label='Mareógrafo', linestyle='dashed')
+
+for name, df in swan_data_day.items():
+    plt.plot(df['Time'], df['Tm02'], label=f'SWAN - {name}')
+
+plt.xlabel("Time", fontsize=16, weight='bold')
+plt.ylabel("Mean Period (s)", fontsize=16, weight='bold')
+plt.title("Mean Perior: Observation vs Numerical Model", fontsize=20, weight='bold')
+plt.legend(fontsize=16)
+plt.xticks(rotation=20, fontsize=16)
+plt.yticks(fontsize=16)
+plt.grid()
+
+fig_path = os.path.join(fig_dir, f"Tm02_mareograf_calCvsSWAN_{yesterday_str}.png")
 plt.savefig(fig_path)
 print(f"Saved: {fig_path}")
 
