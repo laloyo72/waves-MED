@@ -200,7 +200,7 @@ echo "standard forecast finishedd!!"
 cd $VAL_DIR
 python3 download_and_calculate_mareograf_op.py "$CASE"
 #plot
-python3 validate_op.py "$CASE"
+python3 validate_op.py "$CASE" "$SWAN_CASE"
 
 # 6. we add timeGPT
 echo "If you want to use the timeGPT module follow the steps explained in ./timeGPT/README.txt"
