@@ -23,3 +23,6 @@
 **/*.prj
 **/*.shp
 **/*.shx
+# Python
+**/__pycache__/
+**/*.py[cod]
