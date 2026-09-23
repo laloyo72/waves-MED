@@ -28,6 +28,6 @@ def plot_depth_matrix(matrix_file):
 #depth_matrix_file = "../../cases/murcia/bathy/bottom_ca01_HRES_matrix.dat"
 #depth_matrix_file = "../../bathy/bottom_ca12_matrix.dat"
 #depth_matrix_file = "../../cases/alcudia/bathy/bottom_ca03_matrix.dat"
-depth_matrix_file = "../../cases/bilbo/bathy/bottom_ca00_matrix.dat"
+depth_matrix_file = "../../cases/tarragona/bathy/bottom_ca00_matrix.dat"
 # Plot depth matrix
 plot_depth_matrix(depth_matrix_file)
