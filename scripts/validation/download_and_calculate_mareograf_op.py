@@ -1,7 +1,7 @@
 # we are trying to imitate joan's matlab code to calculate Hsig and Tp 
 # from mareograf series
 # i want to make it operational for each day
-# last modifies 23/09/26
+# last modifies 21/09/26
 ###################^w^####################
 # Triam els paràmetres
 
@@ -429,4 +429,3 @@ plt.ylabel("Tm2 [s]")
 plt.grid()
 plt.legend()
 
-plt.show()
