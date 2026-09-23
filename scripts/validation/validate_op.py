@@ -9,12 +9,13 @@ from datetime import date, datetime, timedelta
 # CASE
 # ============================================================
 
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print("Usage: python validate_op.py <case>")
     sys.exit(1)
 
 case_name = sys.argv[1].lower()
-print(f"Validating case: {case_name}")
+swan_case = sys.argv[2].lower()
+print(f"Validating case: {case_name}, {swan_case}")
 
 
 # ============================================================
@@ -51,10 +52,10 @@ file_suffix = f"{yesterday_str}_{today_str}.txt"
 # ============================================================
 
 file_patterns = {
-    "F0": base_path + f"tableP_ca00_F0_{file_suffix}",
-    "F1": base_path + f"tableP_ca00_F1_{file_suffix}",
-    "F2": base_path + f"tableP_ca00_F2_{file_suffix}",
-    "F3": base_path + f"tableP_ca00_F3_{file_suffix}"
+    "F0": base_path + f"tableP_{swan_case}_F0_{file_suffix}",
+    "F1": base_path + f"tableP_{swan_case}_F1_{file_suffix}",
+    "F2": base_path + f"tableP_{swan_case}_F2_{file_suffix}",
+    "F3": base_path + f"tableP_{swan_case}_F3_{file_suffix}"
 }
 
 available_files = {
