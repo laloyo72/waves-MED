@@ -53,8 +53,8 @@ bilbo:
 
 tarifa:
   boundary_point:
-    lat: null
-    lon: null
+    lat: 35.98
+    lon: -5.58
 
   tide_gauge:
     code: MIR2Z_Tarifa_Tari_3540
