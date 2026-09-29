@@ -41,6 +41,7 @@ SWAN_RUN_FILE="${CASE_DIR}/swanrun"
 
 # dates (caos because it wasn't working correctly)
 TODAY=$(date +%Y%m%d)
+#TODAY=${1:-$(date +%Y%m%d)}
 
 DATE_MINUS_2D=$(date -d "$TODAY -2 days" +%Y%m%d)
 DATE_MINUS_1D=$(date -d "$TODAY -1 days" +%Y%m%d)
@@ -73,7 +74,7 @@ cd $BASE_DIR
 echo "1. intertpolatinnnnn EMODNET bathymetry to domain"
 # we move to the corresponding path
 cd ./scripts/bathy/
-python3 download_and_interp_EMODNET_withcoastline_angle.py "$CASE" "$SWAN_CASE" "$LAT" "$LON"
+#python3 download_and_interp_EMODNET_withcoastline_angle.py "$CASE" "$SWAN_CASE" "$LAT" "$LON"
 echo "coastline must be downloaded from EMODNET before hand, bathymetry is automatically downloaded"
 echo "interpolation must be done just once, if you already created bathy_matrix just comment the interpolation part on the script"
 
@@ -82,7 +83,7 @@ echo "2. downloadinn open water wave conditions from PdE"
 echo "Remember, defining the lat,lon coordinates on teh script for your case"
 cd $BASE_DIR
 cd ./scripts/opendap/
-python3 save_simar_point_to_TPAR.py "$CASE" "$LAT" "$LON"
+python3 save_simar_point_to_TPAR.py "$CASE" "$LAT" "$LON" "$TODAY"
 
 
 cd $BASE_DIR
@@ -198,9 +199,9 @@ echo "standard forecast finishedd!!"
 # 5. automatize some output plots 
 #calculate mareograf wave parameters from series
 cd $VAL_DIR
-python3 download_and_calculate_mareograf_op.py "$CASE"
+python3 download_and_calculate_mareograf_op.py "$CASE" "$TODAY" || echo "WARNING: Mareograf calculation failed for $CASE ($TODAY). Continuing workflow."
 #plot
-python3 validate_op.py "$CASE" "$SWAN_CASE"
+python3 validate_op.py "$CASE" "$SWAN_CASE" "$TODAY" || echo "WARNING: Validation plots failed for $CASE ($TODAY). Continuing workflow."
 
 # 6. we add timeGPT
 echo "If you want to use the timeGPT module follow the steps explained in ./timeGPT/README.txt"
@@ -208,4 +209,4 @@ cd $TIMEGPT_DIR
 echo "remember to add you nixtla key in .env file"
 echo "you have to define the variable you want to predict with timeGPT at the start of the file"
 echo "options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual"
-#python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE"
+#python3 ./timeGPT.py "$CASE" "$GPT_target_VAR" "$SWAN_OUTPUT_FILE" "$TODAY"
