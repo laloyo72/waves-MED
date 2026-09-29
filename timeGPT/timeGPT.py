@@ -117,7 +117,7 @@ print(today_str)
 time_dir = today.strftime("%Y%m")
 save_dir = f"./prediction/{case_name}/{time_dir}/" # we can change this to be more for any user with a path variable
 os.makedirs(save_dir, exist_ok=True)
-output_file=os.path.join(save_dir, f"Hsig_swan{today_str}.csv")
+output_file=os.path.join(save_dir, f"{target_var}_swan{today_str}.csv")
 print(output_file)
 # modify date to today, as we treaked (trampa) timeGPT
 n_rows = timegpt_fcst_ex_vars_df.shape[0]
