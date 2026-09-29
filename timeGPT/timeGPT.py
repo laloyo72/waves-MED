@@ -38,7 +38,6 @@ future_file_path=sys.argv[3] # swan forecast
 today = datetime.strptime(sys.argv[4], "%Y%m%d").replace(tzinfo=timezone.utc)
 #Variables that can be predicted
 allowed_vars = ['Hsig', 'Tp', 'Tm1', 'Tm2']
-
 if target_var not in allowed_vars:
     print(f"Error: '{target_var}' is not a valid prediction variable.")
     print(f"Choose one of: {', '.join(allowed_vars)}")
@@ -123,8 +122,7 @@ print(output_file)
 # modify date to today, as we treaked (trampa) timeGPT
 n_rows = timegpt_fcst_ex_vars_df.shape[0]
 
-today_utc_midnight = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-new_dates = pd.date_range(start=today_utc_midnight, periods=n_rows, freq='h')
+new_dates = pd.date_range(start=today, periods=n_rows, freq='h')
 timegpt_fcst_ex_vars_df['ds'] = new_dates
 
 print(timegpt_fcst_ex_vars_df.head())
