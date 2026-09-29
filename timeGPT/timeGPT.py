@@ -21,7 +21,7 @@ from datetime import date, datetime, timezone, timedelta
 # Arguments
 # --------------------------------------------------
 
-if len(sys.argv) < 4:
+if len(sys.argv) < 5:
     print("Usage:")
     print("    python timeGPT.py <case_name> <variable>")
     print("")
@@ -35,7 +35,7 @@ if len(sys.argv) < 4:
 case_name = sys.argv[1]
 target_var = sys.argv[2]
 future_file_path=sys.argv[3] # swan forecast
-
+today = datetime.strptime(sys.argv[4], "%Y%m%d").replace(tzinfo=timezone.utc)
 #Variables that can be predicted
 allowed_vars = ['Hsig', 'Tp', 'Tm1', 'Tm2']
 
@@ -112,7 +112,7 @@ h = len(df_future)
 #fcst with timeGPT
 timegpt_fcst_ex_vars_df = nixtla_client.forecast(df=df, X_df=df_future, h=h, level=[80, 90], freq="1h")
 #save 
-today = datetime.now(timezone.utc)
+#today = datetime.now(timezone.utc)
 today_str = today.strftime("%Y%m%d")
 print(today_str)
 time_dir = today.strftime("%Y%m")

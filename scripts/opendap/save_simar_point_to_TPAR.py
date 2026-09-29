@@ -32,12 +32,14 @@ def utm_to_lanlot(easting, northing, xlen, ylen):
 
     return lat_min, lat_max, lon_min, lon_max
 #TODO: define lat and lon sima rpoint based on INPUT.swn file. it's difficult to think about any space in mallorca. maybe this shouldn't be automatized for any domain
-def download_simar_point(case_name, lat, lon):
+def download_simar_point(case_name, lat, lon, today):
 
     base_url = "http://opendap.puertos.es/thredds/dodsC/wave_regional_aib/{year}/{month:02d}/"
 
     # extract day
-    today = datetime.now(timezone.utc)
+    #today = datetime.now(timezone.utc)
+    
+    # now today from general auto bash script
     #print("Today date is: ", today)
 
     # creating available FC names
@@ -105,13 +107,14 @@ def download_simar_point(case_name, lat, lon):
 
     print("Download process completed.")
 # command-line arguments given in bash script
-if len(sys.argv) < 4:
+if len(sys.argv) < 5:
     print("Usage: python save_simar_point_to_TPAR.py <case_name> <latitude> <longitude>")
     sys.exit(1)
 
 case_name = sys.argv[1]
 latitude = float(sys.argv[2])
 longitude = float(sys.argv[3])
+today = datetime.strptime(sys.argv[4], "%Y%m%d").replace(tzinfo=timezone.utc)
 
 #download_simar_point(lat=39.82211604, lon=3.20387967)
-download_simar_point(case_name, latitude, longitude)
+download_simar_point(case_name, latitude, longitude, today)

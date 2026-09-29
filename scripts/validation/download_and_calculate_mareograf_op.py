@@ -7,7 +7,7 @@
 
 import sys
 from pathlib import Path
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -74,7 +74,7 @@ def load_case(case_name):
 # SELECT CASE
 # ============================================================
 
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     print(
         "Usage:\n"
         "  python3 scripts/validation/"
@@ -87,9 +87,10 @@ if len(sys.argv) != 2:
     sys.exit(1)
 
 CASE = sys.argv[1].lower()
-CASE = "tarragona"
+today = datetime.strptime(sys.argv[2], "%Y%m%d").replace(tzinfo=timezone.utc)
 
 case_config = load_case(CASE)
+
 
 # Tide gauge configuration
 tide_gauge = case_config.get("tide_gauge")
@@ -114,7 +115,8 @@ print("======================================\n")
 # DATE
 # ============================================================
 
-today = date.today()
+#today = date.today()
+# today is now generalized at main bash script
 yesterday = today - timedelta(days=1)
 
 yesterday_str = yesterday.strftime("%Y%m%d")

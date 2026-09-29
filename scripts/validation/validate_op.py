@@ -2,19 +2,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 
 # ============================================================
 # CASE
 # ============================================================
 
-if len(sys.argv) != 3:
+if len(sys.argv) != 4:
     print("Usage: python validate_op.py <case>")
     sys.exit(1)
 
 case_name = sys.argv[1].lower()
 swan_case = sys.argv[2].lower()
+today = datetime.strptime(sys.argv[3], "%Y%m%d").replace(tzinfo=timezone.utc)
+
 print(f"Validating case: {case_name}, {swan_case}")
 
 
@@ -22,7 +24,8 @@ print(f"Validating case: {case_name}, {swan_case}")
 # DATES
 # ============================================================
 
-today = date.today()
+#today = date.today()
+# generalised today to main bash script
 # today = datetime(2025, 5, 25).date()
 today_str = today.strftime("%Y%m%d")
 
