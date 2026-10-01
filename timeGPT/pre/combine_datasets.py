@@ -17,10 +17,10 @@ print("you have to select the files you want to combine, open the script!!")
 #mareograf_file="../DATA//mareograf/calculated/alcudia/wave_parameters_20250101_20260101.csv"
 
 
-swan_long_sim_file="/home/laloyo/waves-MED/cases/bilbo/output/tableP_cat0_F3_20250101_20260101.txt"
-mareograf_file="../DATA//mareograf/calculated/bilbo/wave_parameters_bilbo_20250101_20260101.csv"
+swan_long_sim_file="/home/laloyo/waves-MED/cases/tarragona/output/tablePd_cat0_F3_20250601_20260601.txt"
+mareograf_file="/home/laloyo/waves-MED/DATA/mareograf/calculated/tarragona/wave_parameters_tarragona_20250601_20260601.csv"
 
-merged_file="../combine/bilbo/Hsig_exog_vars_swan-calcMareograf.csv"
+merged_file="../combine/tarragona/Hsig_exog_vars_swan-calcMareograf.csv"
 os.makedirs(os.path.dirname(merged_file), exist_ok=True)
 def read_mareograf_calc(file_simar):
     df = pd.read_csv(
