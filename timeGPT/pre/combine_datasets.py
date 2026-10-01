@@ -18,7 +18,7 @@ print("you have to select the files you want to combine, open the script!!")
 
 
 swan_long_sim_file="/home/laloyo/waves-MED/cases/tarragona/output/tablePd_cat0_F3_20250601_20260601.txt"
-mareograf_file="/home/laloyo/waves-MED/DATA/mareograf/calculated/tarragona/wave_parameters_tarragona_20250601_20260601.csv"
+mareograf_file="/home/laloyo/waves-MED/DATA/mareograf/calculated/tarragona/wave_parameters_tarragona_20250601_20260601_welch.csv"
 
 merged_file="../combine/tarragona/Hsig_exog_vars_swan-calcMareograf.csv"
 os.makedirs(os.path.dirname(merged_file), exist_ok=True)

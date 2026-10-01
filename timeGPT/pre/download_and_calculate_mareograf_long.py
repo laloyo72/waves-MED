@@ -1,27 +1,58 @@
-# we are trying to adapt joan's matlab code to calculate Hsig and Tp 
+# we are trying to adapt joan's matlab code to calculate Hsig, Tp, Tm1 and Tm2
 # from mareograf series of Puertos
-# generalized & interactive version for operational use
-# by @laloyo + copi 23/06/26
+# generalized & interactive version for long-term use
+# updated to use the same Welch methodology as the operational script
+# 24/09/26
 ###################^w^####################
+
 import numpy as np
 import pandas as pd
-import scipy.fftpack as fft
 import xarray as xr
 import os
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import yaml
 
+from wave_functions import welch_periodogram
 
-# ============================
+
+# ============================================================
 # CASES CONFIGURATION
-# ============================
+# ============================================================
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES_FILE = ROOT / "config" / "cases.yml"
 
 BASE_OPENDAP = "http://opendap.puertos.es/thredds/dodsC"
 
+
+# ============================================================
+# WAVE PARAMETERS
+# ============================================================
+
+# Sampling period of the sea level data [s]
+dt = 0.5
+
+# Maximum fraction of NaNs allowed in each wave-analysis window
+umbral_nan = 0.2  # 20%
+
+# Sample length used for each wave parameter estimate
+intervalo_muestras = 1024 * 4
+
+# Time interval between wave parameter estimates
+wave_dt = "0.5h"
+
+# Number of samples per segment in the Welch periodogram
+n_fft_welch = 256
+
+# Valid limits of the spectrum in period [s]
+Tmin = 1
+Tmax = 20
+
+
+# ============================================================
+# CASES
+# ============================================================
 
 def load_cases():
     """Load case configuration from cases.yml."""
@@ -30,7 +61,7 @@ def load_cases():
 
 
 def ask_inputs():
-    print("\n=== Available Tide Gauges from PdE → Hsig/Tp (TimeGPT helper) ===\n")
+    print("\n=== Available Tide Gauges from PdE → Hsig/Tp ===\n")
     print(
         "We selected the tide gauges that are not directly inside the port, "
         "so that they represent the energy that can be obtained from the waves "
@@ -74,6 +105,10 @@ def ask_inputs():
     return station, start_date, end_date
 
 
+# ============================================================
+# DOWNLOAD SEA LEVEL DATA
+# ============================================================
+
 def load_puertos_series(station, start_date, end_date):
 
     cases = load_cases()
@@ -92,6 +127,7 @@ def load_puertos_series(station, start_date, end_date):
     time_list, slev_list = [], []
 
     while current_date <= end_date:
+
         date_str = current_date.strftime("%Y%m%d")
         year, month = current_date.year, current_date.month
 
@@ -102,10 +138,17 @@ def load_puertos_series(station, start_date, end_date):
 
         try:
             ds = xr.open_dataset(url)
-            df_day = ds[["TIME", "SLEV"]].to_dataframe().reset_index()
+            df_day = (
+                ds[["TIME", "SLEV"]]
+                .to_dataframe()
+                .reset_index()
+            )
+
             time_list.extend(df_day["TIME"].tolist())
             slev_list.extend(df_day["SLEV"].tolist())
+
             print(f"Data loaded for {date_str}")
+
         except Exception as e:
             print(f"Error loading data for {date_str}: {e}")
 
@@ -115,153 +158,284 @@ def load_puertos_series(station, start_date, end_date):
         print("\n⚠ No se ha podido cargar ningún dato de Puertos.")
         print("   Revisa manualmente el catálogo OPeNDAP:")
         print("   https://opendap.puertos.es/thredds/catalog/catalog.html")
-        print("\n   Sin datos de mareógrafo no puedes usar el módulo TimeGPT :(\n")
+        print("\n   Sin datos de mareógrafo no puedes usar este módulo :(\n")
         return None
 
-    df = pd.DataFrame({"TIME": time_list, "SLEV": slev_list})
-    df["TIME"] = pd.to_datetime(df["TIME"], utc=True)
-    return df
+    df = pd.DataFrame({
+        "TIME": time_list,
+        "SLEV": slev_list
+    })
 
-
-def interpolate_slev(df):
-    nan_indices = df["SLEV"].isna()
-
-    # parámetros
-    umbral_nan = 0.1      # 10% NaNs allowed in each block
-    intervalo_muestras = 960  # nº de muestras por bloque (ajusta a tu sampling real)
-
-    df["SLEV_interp"] = df["SLEV"].copy()
-
-    for i in range(0, len(df) - intervalo_muestras, intervalo_muestras):
-        indices_intervalo = np.arange(i, i + intervalo_muestras)
-
-        num_nans_intervalo = nan_indices.iloc[indices_intervalo].sum()
-        num_datos_intervalo = len(indices_intervalo)
-
-        if num_nans_intervalo / num_datos_intervalo <= umbral_nan:
-            valid_data = df.loc[indices_intervalo, "SLEV"].dropna()
-            if len(valid_data) > 1:
-                df.loc[indices_intervalo, "SLEV_interp"] = (
-                    df.loc[indices_intervalo, "SLEV"]
-                    .interpolate(method="linear", limit_direction="both")
-                )
+    df["TIME"] = pd.to_datetime(
+        df["TIME"],
+        utc=True
+    )
 
     return df
 
+
+# ============================================================
+# CALCULATE WAVE PARAMETERS USING WELCH
+# ============================================================
 
 def calculate_wave_params(df, start_date, end_date, station):
-    SL_interpolado = df["SLEV_interp"].values
+
+    SL = df["SLEV"].values
     time = df["TIME"].values
 
-    # time vector for simulation
-    timeVec = pd.date_range(start=start_date, end=end_date, freq="1h")
+    # One result every wave_dt over the requested period
+    timeVec = pd.date_range(
+        start=start_date,
+        end=end_date,
+        freq=wave_dt
+    )
 
-    # FFT params
-    n_fft = 1024 // 2
-    Tmin = 1
-    Tmax = 20
-    dt = 0.5
-    n_fmax = int(n_fft * dt / Tmin)
-    n_fmin = int(np.floor(n_fft * dt / Tmax))
+    # Initialize results
+    Hm_w = np.full(len(timeVec), np.nan)
+    Tm1_w = np.full(len(timeVec), np.nan)
+    Tm2_w = np.full(len(timeVec), np.nan)
+    tp_w = np.full(len(timeVec), np.nan)
 
-    Hm  = np.zeros(len(timeVec))
-    Tm1 = np.zeros(len(timeVec))
-    Tm2 = np.zeros(len(timeVec))
-    tp  = np.zeros(len(timeVec))
-    spt_news = [None] * len(timeVec)
-    spt_filt = [None] * len(timeVec)
-
-    # YYYYMMDD for date writting
+    # YYYYMMDD for output filename
     start = start_date.strftime("%Y%m%d")
     end = end_date.strftime("%Y%m%d")
 
-    outdir = f"../DATA/mareograf/calculated/{station}"
-    os.makedirs(outdir, exist_ok=True)
-    output_file = os.path.join(outdir, f"wave_parameters_{station}_{start}_{end}.csv")
+    outdir = (
+        ROOT / "DATA" / "mareograf" / "calculated" / station
+    )
+    outdir.mkdir(parents=True, exist_ok=True)
 
-    # si existe de antes, lo borramos para no mezclar runs
-    if os.path.exists(output_file):
-        os.remove(output_file)
+    output_file = (
+        outdir /
+        f"wave_parameters_{station}_{start}_{end}_welch.csv"
+    )
+
+    # If it exists from a previous run, remove it to avoid mixing runs
+    if output_file.exists():
+        output_file.unlink()
+
+    # ========================================================
+    # WAVE PARAMETER CALCULATION
+    # ========================================================
 
     for n, t_ref in enumerate(timeVec):
-        t_ref_np = np.datetime64(t_ref.replace(tzinfo=None))
-        ind = np.argmin(np.abs(time - t_ref_np))
 
-        if ind >= len(time) - n_fft + 1:
+        # Find closest index in tide gauge time series
+        t_ref_np = np.datetime64(
+            t_ref.replace(tzinfo=None)
+        )
+
+        ind = np.argmin(
+            np.abs(time - t_ref_np)
+        )
+
+        # Make sure enough data exists for a complete analysis window
+        if ind >= len(time) - intervalo_muestras + 1:
+            print(t_ref)
             continue
 
-        aux = SL_interpolado[ind:ind + n_fft]
+        # Extract analysis window
+        aux_raw = SL[
+            ind:ind + intervalo_muestras
+        ]
 
-        new_fft = fft.fft(aux - np.mean(aux), n_fft)
-        new_spt = np.abs(new_fft) ** 2
-        new_spt = 2 * new_spt / (n_fft ** 2)
+        # Remove leading/trailing NaNs before calculating the
+        # fraction of missing data
+        nan_indices = np.where(~np.isnan(aux_raw))[0]
 
-        new_spt[:n_fmin] = 0
-        new_spt[n_fmax:] = 0
+        if nan_indices.size == 0:
+            print(f"{t_ref}: no valid sea-level data")
+            continue
 
-        new_freq = np.arange(len(new_spt)) / (n_fft * dt)
-        new_freq = new_freq[:n_fmax]
-        new_spt  = new_spt[:n_fmax]
+        first_valid = nan_indices[0]
+        last_valid = nan_indices[-1]
 
-        spt_news[n] = new_spt
-        spt_filt[n] = new_spt * (1 - (1 / (1 + ((new_freq / (2 / Tmax)) ** 2) ** 2)))
+        # +1 because the last index is included
+        aux_cut = aux_raw[
+            first_valid:last_valid + 1
+        ]
 
-        new_period = 1 / new_freq
+        # Fraction of NaNs in the actual analysis window
+        nan_frac = (
+            np.isnan(aux_cut).sum() / len(aux_cut)
+        )
 
-        m0 = np.sum(spt_filt[n])
-        m1 = np.sum(spt_filt[n] * new_freq)
-        m2 = np.sum(spt_filt[n] * (new_freq ** 2))
+        if nan_frac > umbral_nan:
+            print(
+                f"{t_ref}: too many NaNs "
+                f"({nan_frac:.1%})"
+            )
+            continue
 
-        ind2 = np.argmax(spt_filt[n])
+        if len(aux_cut) < n_fft_welch:
+            print(
+                f"{t_ref}: not enough valid samples "
+                f"for Welch periodogram"
+            )
+            continue
 
-        Hm[n]  = np.sqrt(m0) * 4
-        Tm1[n] = m0 / m1
-        Tm2[n] = np.sqrt(m0 / m2)
-        tp[n]  = new_period[ind2]
+        # Interpolate only the remaining internal NaNs
+        aux = (
+            pd.Series(aux_cut)
+            .interpolate(
+                method="linear",
+                limit_direction="both"
+            )
+            .to_numpy()
+        )
+
+        # ----------------------------------------------------
+        # Welch periodogram
+        # ----------------------------------------------------
+
+        frequency, pwel = welch_periodogram(
+            aux - np.mean(aux),
+            dt,
+            n_fft_welch,
+            segment_length=n_fft_welch,
+            overlap=0.5
+        )
+
+        # ----------------------------------------------------
+        # Restrict spectrum to the valid period range
+        # Tmin <= T <= Tmax
+        # ----------------------------------------------------
+
+        valid = (
+            (frequency >= 1 / Tmax) &
+            (frequency <= 1 / Tmin)
+        )
+
+        frequency = frequency[valid]
+        pwel = pwel[valid]
+
+        if len(frequency) == 0:
+            print(
+                f"{t_ref}: no frequencies inside "
+                f"{Tmin}-{Tmax} s"
+            )
+            continue
+
+        # ----------------------------------------------------
+        # Spectral moments
+        # ----------------------------------------------------
+
+        m0_w = np.sum(pwel)
+        m1_w = np.sum(
+            pwel * frequency
+        )
+        m2_w = np.sum(
+            pwel * frequency**2
+        )
+
+        # ----------------------------------------------------
+        # Peak period
+        # ----------------------------------------------------
+
+        ind_peak = np.argmax(pwel)
+
+        # ----------------------------------------------------
+        # Wave parameters
+        # ----------------------------------------------------
+
+        Hm_w[n] = (
+            np.sqrt(m0_w) * 4
+        )
+
+        Tm1_w[n] = (
+            m0_w / m1_w
+            if m1_w != 0
+            else np.nan
+        )
+
+        Tm2_w[n] = (
+            np.sqrt(m0_w / m2_w)
+            if m2_w != 0
+            else np.nan
+        )
+
+        tp_w[n] = (
+            1 / frequency[ind_peak]
+            if frequency[ind_peak] != 0
+            else np.nan
+        )
+
+        # ----------------------------------------------------
+        # Save result
+        # ----------------------------------------------------
 
         result_df = pd.DataFrame({
             "TIME": [t_ref],
-            "Hsig": [Hm[n]],
-            "Tp":   [tp[n]],
-            "Tm1":  [Tm1[n]],
-            "Tm2":  [Tm2[n]],
+            "Hsig": [round(Hm_w[n], 8)],
+            "Tp": [round(tp_w[n], 8)],
+            "Tm1": [round(Tm1_w[n], 8)],
+            "Tm2": [round(Tm2_w[n], 8)]
         })
-        result_df["TIME"] = result_df["TIME"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        result_df["TIME"] = (
+            result_df["TIME"]
+            .dt.strftime("%Y-%m-%d %H:%M:%S")
+        )
 
         result_df.to_csv(
             output_file,
             sep="\t",
             index=False,
             mode="a",
-            header=not os.path.exists(output_file),
+            header=not output_file.exists()
         )
 
-        print(f"Results saved for {t_ref} in {output_file}")
+        print(
+            f"Results saved for {t_ref} "
+            f"in {output_file}"
+        )
 
-    print("\n=== Download and calculation finishedd!!! ===")
+    print("\n=== Download and calculation finished!!! ===")
     print(f"Saved output file: {output_file}\n")
 
 
+# ============================================================
+# MAIN
+# ============================================================
+
 def main():
+
     try:
         station, start_date, end_date = ask_inputs()
+
     except Exception as e:
         print(f"\n Error en la entrada: {e}")
         return
 
-    df = load_puertos_series(station, start_date, end_date)
+    df = load_puertos_series(
+        station,
+        start_date,
+        end_date
+    )
+
     if df is None:
         return
 
-    df = interpolate_slev(df)
-    calculate_wave_params(df, start_date, end_date, station)
+    calculate_wave_params(
+        df,
+        start_date,
+        end_date,
+        station
+    )
 
-    print("If you have problems with the data, check Puertos OPeNDAP:")
-    print("https://opendap.puertos.es/thredds/catalog/catalog.html")
-    print("If there is no available data for your domain of interest, you cannot use this module :(\n")
+    print(
+        "If you have problems with the data, "
+        "check Puertos OPeNDAP:"
+    )
+    print(
+        "https://opendap.puertos.es/thredds/catalog/catalog.html"
+    )
+    print(
+        "If there is no available data for your domain of interest, "
+        "you cannot use this module :("
+    )
     print("You could always adapt the script to your own data")
 
 
 if __name__ == "__main__":
     main()
-
