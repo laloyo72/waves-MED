@@ -34,7 +34,7 @@ The script will ask you to select the **case**, **start date**, and **end date**
 After running the script, the calculated tide gauge time series will be stored in:
 
 ```text
-./DATA/mareograf/calculated/{case_name}/wave_parameters_{case_name}_{start_date}_{end_date}.csv
+./DATA/mareograf/calculated/{case_name}/wave_parameters_{case_name}_{start_date}_{end_date}_welch.csv
 ```
 
 ---
