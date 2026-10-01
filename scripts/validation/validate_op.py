@@ -180,7 +180,7 @@ fig_path = os.path.join(fig_dir, f"Tp_mareograf_calCvsSWAN_{yesterday_str}.png")
 plt.savefig(fig_path)
 print(f"Saved: {fig_path}")
 
-plt.show()
+#plt.show()
 
 # ============================================================
 # PLOT MEan Period
@@ -205,4 +205,4 @@ fig_path = os.path.join(fig_dir, f"Tm02_mareograf_calCvsSWAN_{yesterday_str}.png
 plt.savefig(fig_path)
 print(f"Saved: {fig_path}")
 
-plt.show()
+#plt.show()
