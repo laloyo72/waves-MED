@@ -20,6 +20,9 @@ BASE_DIR="/home/laloyo/waves-MED/"
 # options are: Hsig, Tp, Tm1, Tm2. for exact definitions look at SWAN user manual
 GPT_target_VAR="Hsig"
 
+# Activate wind forcing?, choose true or false
+USE_WIND=false
+
 # Deactivate conda and Activate the Python virtual environment
 #conda deactivate
 source /home/laloyo/environments/waves-MED/bin/activate #path to you venv
@@ -85,8 +88,7 @@ cd $BASE_DIR
 cd ./scripts/opendap/
 python3 save_simar_point_to_TPAR.py "$CASE" "$LAT" "$LON" "$TODAY"
 
-
-cd $BASE_DIR
+# we have four different files available in puertos del estado opendap, depending on which is available we run the forecats with it 
 
 FILE0="TPAR_HW-${DATE_MINUS_2D}01-${DATE_PLUS_1D}00-B${DATE_MINUS_2D}00-FC_point_${LAT}_${LON}.txt"
 FILE1="TPAR_HW-${DATE_MINUS_2D}13-${DATE_PLUS_1D}12-B${DATE_MINUS_2D}12-FC_point_${LAT}_${LON}.txt"
@@ -146,8 +148,29 @@ for i in "${!BOUNDARIES[@]}"; do
     sed -i "s#^BOUN  SIDE ${BC_LETTER} .*#BOUN  SIDE ${BC_LETTER} CON FILE '$BOUNDARY_FILE'#" "$SWAN_INPUT_FILE"
 done
 
+# 3. if truE it will download and adapt wind frocing
+WIND_AVAILABLE=false
 
-# 3.adjust  COMPute NONSTationary line in INPUT.swn file to adjust to eachday fc
+if [ "$USE_WIND" = true ]; then
+    echo "2. Downloading and adapting wind forcing from ECMWF"
+    echo "Date: ${TODAY}"
+
+    cd "${BASE_DIR}/scripts/wind/"
+
+    if python3 download_ecmwf_wind.py "$CASE" "$SWAN_CASE" "$LAT" "$LON" "$TODAY"; then
+        echo "ECMWF wind successfully downloaded."
+        WIND_AVAILABLE=true
+    else
+        echo "WARNING: ECMWF wind download failed."
+        echo "Continuing forecast without wind forcing."
+        WIND_AVAILABLE=false
+    fi
+fi
+
+cd $BASE_DIR
+
+
+# 4.adjust  COMPute NONSTationary line in INPUT.swn file to adjust to eachday fc
 SWAN_INPUT_FILE="${CASE_DIR}/input_${SWAN_CASE}.swn"
 SWAN_RUN_FILE="${CASE_DIR}/swanrun"
 # bathy name
@@ -186,24 +209,52 @@ esac
 # selected end date:
 echo "Running till selected end date: $END_DATE"
 
+# wind
+if [ "$WIND_AVAILABLE" = true ]; then
+    echo "Activating ECMWF wind forcing in SWAN."
+
+    # Change NO WIND -> YES WIND
+    sed -i 's/^\$ NO WIND/\$ YES WIND/' "$SWAN_INPUT_FILE"
+
+    # we have to read info in cgrid to make the wind forcing grid bigger
+    CGRID_LINE=$(grep '^CGRID' "$SWAN_INPUT_FILE")
+    read -r _ XPC YPC ALPC XLENC YLENC MXC MYC _ <<< "$CGRID_LINE"
+
+    # Add/update INPGRID WIND
+    sed -i '/^INPGRID   WIND/d' "$SWAN_INPUT_FILE"
+    sed -i '/^READINP   WIND/d' "$SWAN_INPUT_FILE"
+
+    sed -i "/^\$ YES WIND/a INPGRID   WIND REGULAR ${XPC} ${YPC} 0 1 1 ${XLENC} ${YLENC} EXC -99.0 NONSTat ${TODAY}.000000 1 HR ${END_DATE}" "$SWAN_INPUT_FILE"
+    sed -i "/^INPGRID   WIND/a READINP   WIND 1 'wind/wind_${SWAN_CASE}.dat' 2 0 FREE" "$SWAN_INPUT_FILE"
+else
+    echo "Wind forcing disabled."
+
+    # Change YES WIND -> NO WIND
+    sed -i 's/^\$ YES WIND/\$ NO WIND/' "$SWAN_INPUT_FILE"
+
+    # Remove wind input lines if they exist
+    sed -i '/^INPGRID   WIND/d' "$SWAN_INPUT_FILE"
+    sed -i '/^READINP   WIND/d' "$SWAN_INPUT_FILE"
+fi
+
 # modify end date in INPUT file
 sed -i "s/^COMPUTE NONSTat .*/COMPUTE NONSTat ${TODAY:0:8}.000000 1 HR ${END_DATE}/" "$SWAN_INPUT_FILE"
 
-# 4. run swan
+# 5. run swan
 sed -i "s#^input=.*#input=input_${SWAN_CASE}#" "${SWAN_RUN_FILE}"
 cd $CASE_DIR
 echo "before running you must have swanrun and swan.exe correctly compiled in the case directory"
 ./swanrun
 echo "standard forecast finishedd!!"
 
-# 5. automatize some output plots 
+# 6. automatize some output plots 
 #calculate mareograf wave parameters from series
 cd $VAL_DIR
 python3 download_and_calculate_mareograf_op.py "$CASE" "$TODAY" || echo "WARNING: Mareograf calculation failed for $CASE ($TODAY). Continuing workflow."
 #plot
 python3 validate_op.py "$CASE" "$SWAN_CASE" "$TODAY" || echo "WARNING: Validation plots failed for $CASE ($TODAY). Continuing workflow."
 
-# 6. we add timeGPT
+# 7. we add timeGPT
 echo "If you want to use the timeGPT module follow the steps explained in ./timeGPT/README.txt"
 cd $TIMEGPT_DIR 
 echo "remember to add you nixtla key in .env file"

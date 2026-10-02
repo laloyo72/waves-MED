@@ -9,6 +9,8 @@ click==8.5.0
 contourpy==1.4.0
 cycler==0.12.1
 dotenv==0.9.9
+ecmwf-api-client==1.7.0
+ecmwf-opendata==0.3.34
 fonttools==4.65.0
 geopandas==1.1.4
 h11==0.16.0
@@ -17,6 +19,7 @@ httpx==0.28.1
 idna==3.19
 kiwisolver==1.5.1
 matplotlib==3.11.2
+multiurl==0.3.9
 narwhals==2.26.0
 netCDF4==1.7.4
 nixtla==0.8.0

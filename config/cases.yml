@@ -1,6 +1,7 @@
 # config/cases.yml
 # in this script we must define: 
-#   1. coordinates of the BC we will download and use in SWAN (from SIMAR LowRes simulation: http://opendap.puertos.es/thredds/catalog/wave_regional_aib/catalog.html )
+#   1. coordinates of the BC we will download and use in SWAN (from SIMAR LowRes simulation: http://opendap.puertos.es/thredds/catalog/wave_regional_aib/catalog.html)
+# +++ for wind in case we activate it
 #   2. url PATH top download Puertos tide_gauge measurements (http://opendap.puertos.es/thredds/catalog/catalog.html - Nivel del Mar (choose yours))
 
 palma:
