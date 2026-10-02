@@ -14,6 +14,9 @@ python3 -m venv waves-MED # you could call waves-MED virtual environment as you 
 source waves-MED/bin/activate  # linux
 pip install -r requirements.txt
 ```
+### 3. Create an ECMWF account (if wind forecast forcing is wanted)
+If you do not want to or do not have access to wind forecast from ECMWF just set `USE_WIND=false` in the bash script. 
+Otherwise, go to [ecmwf home](https://www.ecmwf.int/) and create an account. Once there take the api key of your user and save it in .ecmwfapirc file in your home.
 ### 4. Create a Nixtla Account (if model adjustment with timeGPT is wanted)
 If you do not want to adjust the model's output with timeGPT just comment the line that executes `timeGPT.py` in the bash script.
 Otherwise, go to [nixtla dashboard](dashboard.nixtla.io) and create an account. Once there, create an API key and save it in a `.env` file in the timeGPT folder. You can follow the instructions provided in section 2b of [Nixtla repo api-key set-up](https://nixtlaverse.nixtla.io/nixtla/docs/getting-started/setting_up_your_api_key.html)
@@ -76,6 +79,9 @@ waves-MED
 │       │   download_and_calculate_mareograf_op.py
 │       │   validate_op.py
 │       │   validate.py
+│   │
+│   └───wind
+│       │   download_ecmwf_wind.py
 │
 └───start
 │   │   input_ca00.swn
@@ -128,6 +134,8 @@ waves-MED
         - `download_and_calculate_mareograf_op.py`: downloads and calculates yesterday's tide gauge measurements' wave height and period
         - `validate_op.py`: Plots yesterday's SWAN output against tide gauge measurements
         - `validate.py`: Plots SWAN output against any validation file downloaded
+    - **`/wind/`**: 
+        - `download_ecmwf_wind.py`: downloads and adapts ECMWF wind forecast to SWAN type forcing file
 
 - **`/timeGPT/`**:
   - `README.txt`: Explains how to add timeGPt module
@@ -208,8 +216,13 @@ Here are the steps:
      ```bash
      GPT_target_VAR="var"
      ```
+
+   - **Line 24**: Set if you want wind forcing:
+     ```bash
+     USE_WIND=false
+     ```
      
-   - **Line 25**: Set the PATH to activate your python environment :
+   - **Line 28**: Set the PATH to activate your python environment :
      ```bash
      source PATH
      ```
